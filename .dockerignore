@@ -1,0 +1,8 @@
+*
+!src/
+!tests/
+!resources/
+!Pipfile
+!Pipfile.lock
+!pytest.ini
+!manage.py

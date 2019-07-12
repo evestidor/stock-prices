@@ -1,0 +1,55 @@
+version: 2.1
+aliases:
+  - &defaults
+    working_directory: ~/app
+    machine:
+      docker_layer_caching: true
+
+  - &authenticate-dockerhub
+    name: Authenticate to Docker Hub
+    command: echo "$DOCKER_HUB_PWD" | docker login -u "$DOCKER_HUB_USER_ID" --password-stdin
+
+  - &build-image
+    name: Build image
+    command: .circleci/bin/build.sh
+
+workflows:
+  version: 2
+  ci-pipeline:
+    jobs:
+      - test-unit
+      - test-lint
+      - publish:
+          requires:
+            - test-unit
+            - test-lint
+
+jobs:
+
+  test-unit:
+    <<: *defaults
+    steps:
+      - checkout
+      - run: *build-image
+      - run:
+          name: Unit tests
+          command: .circleci/bin/run.sh pytest
+
+  test-lint:
+    <<: *defaults
+    steps:
+      - checkout
+      - run: *build-image
+      - run:
+          name: Lint tests (black)
+          command: .circleci/bin/run.sh flake8 --max-line-length=88
+
+  publish:
+    <<: *defaults
+    steps:
+      - checkout
+      - run: *build-image
+      - run: *authenticate-dockerhub
+      - run:
+          name: Push image
+          command: .circleci/bin/push.sh
